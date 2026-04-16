@@ -13,7 +13,8 @@ from dataset import get_dataloaders
 # CONFIGURATION & HYPERPARAMÈTRES
 # ==========================================================
 # Chemins (à adapter selon ton arborescence)
-CSV_PATH = "../data/raw/HAM10000_metadata"
+TRAIN_PATH = "../data/raw/HAM10000_metadata"
+TEST_PATH = "../data/processed/ISIC2018_Task3_Test_GroundTruth.csv"
 IMG_DIR = "../data/images"
 MODEL_SAVE_DIR = "../models"
 
@@ -36,7 +37,7 @@ print(f"🖥️  Exécution sur : {device}")
 # PRÉPARATION DES DONNÉES
 # ==========================================================
 train_loader, val_loader, class_to_idx = get_dataloaders(
-    CSV_PATH, IMG_DIR, batch_size=BATCH_SIZE, sample_size=SAMPLE_SIZE
+    TRAIN_PATH, TEST_PATH, IMG_DIR, batch_size=BATCH_SIZE, sample_size=SAMPLE_SIZE
 )
 
 # Inversion du dictionnaire pour l'affichage des noms de classes

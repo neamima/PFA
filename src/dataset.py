@@ -29,25 +29,27 @@ class HAM10000Dataset(Dataset):
 
         return image, torch.tensor(label, dtype=torch.long)
 
-def get_dataloaders(csv_path, img_dir, batch_size=32, sample_size=None):
+def get_dataloaders(train_path, test_path, img_dir, batch_size=32, sample_size=None):
     """
     Charge le CSV, applique les transformations et retourne les DataLoaders.
     sample_size: Permet de prendre un petit échantillon pour tester sur le PC portable.
     """
-    df = pd.read_csv(csv_path)
+    df_train = pd.read_csv(train_path)
+    df_test = pd.read_csv(test_path)
+
     
     if sample_size:
-        df = df.sample(n=sample_size, random_state=42).reset_index(drop=True)
+        df_train = df_train.sample(n=sample_size, random_state=42).reset_index(drop=True)
+        df_test = df_test.sample(n=sample_size, random_state=42).reset_index(drop=True)
 
     # Création des labels numériques
-    classes = df['dx'].unique()
+    classes = df_train['dx'].unique()
     class_to_idx = {c: i for i, c in enumerate(classes)}
-    df['label'] = df['dx'].map(class_to_idx)
-    
+    df_train['label'] = df_train['dx'].map(class_to_idx)
+    df_test['label'] = df_test['dx'].map(class_to_idx)
+
     # Pour l'instant, on coupe bêtement le dataset en 80% train / 20% validation
-    train_size = int(0.8 * len(df))
-    train_df = df.iloc[:train_size]
-    val_df = df.iloc[train_size:]
+    
 
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     
@@ -64,8 +66,8 @@ def get_dataloaders(csv_path, img_dir, batch_size=32, sample_size=None):
         normalize
     ])
 
-    train_dataset = HAM10000Dataset(train_df, img_dir, transform=train_transforms)
-    val_dataset = HAM10000Dataset(val_df, img_dir, transform=val_transforms)
+    train_dataset = HAM10000Dataset(df_train, img_dir, transform=train_transforms)
+    val_dataset = HAM10000Dataset(df_test, img_dir, transform=val_transforms)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
