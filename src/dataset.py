@@ -4,6 +4,8 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from PIL import Image
+import numpy as np
+from sklearn.utils.class_weight import compute_class_weight
 
 class HAM10000Dataset(Dataset):
     def __init__(self, dataframe, img_dir, transform=None):
@@ -48,7 +50,15 @@ def get_dataloaders(train_path, test_path, img_dir, batch_size=32, sample_size=N
     df_train['label'] = df_train['dx'].map(class_to_idx)
     df_test['label'] = df_test['dx'].map(class_to_idx)
 
-    # Pour l'instant, on coupe bêtement le dataset en 80% train / 20% validation
+    # On utilise 'balanced' pour donner plus de poids aux classes minoritaires
+    train_labels = df_train['label'].values
+    class_weights_np = compute_class_weight(
+        class_weight='balanced', 
+        classes=np.unique(train_labels), 
+        y=train_labels
+    )
+    # Conversion en tenseur PyTorch (obligatoire pour CrossEntropyLoss)
+    class_weights = torch.tensor(class_weights_np, dtype=torch.float32)
     
 
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -72,4 +82,4 @@ def get_dataloaders(train_path, test_path, img_dir, batch_size=32, sample_size=N
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-    return train_loader, val_loader, class_to_idx
+    return train_loader, val_loader, class_to_idx, class_weights

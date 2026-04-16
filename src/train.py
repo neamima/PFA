@@ -36,9 +36,11 @@ print(f"🖥️  Exécution sur : {device}")
 # ==========================================================
 # PRÉPARATION DES DONNÉES
 # ==========================================================
-train_loader, val_loader, class_to_idx = get_dataloaders(
+train_loader, val_loader, class_to_idx, class_weights = get_dataloaders(
     TRAIN_PATH, TEST_PATH, IMG_DIR, batch_size=BATCH_SIZE, sample_size=SAMPLE_SIZE
 )
+
+class_weights = class_weights.to(device)    
 
 # Inversion du dictionnaire pour l'affichage des noms de classes
 idx_to_class = {v: k for k, v in class_to_idx.items()}
@@ -58,8 +60,8 @@ for model_name in MODELS_TO_COMPARE:
     model = get_model(model_name, num_classes=len(target_names)).to(device)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     
-    # On peut ajouter des poids ici si on veut gérer le déséquilibre (facultatif au début)
-    criterion = nn.CrossEntropyLoss()
+    # --- NOUVEAU : Application des poids à la fonction de perte ---
+    criterion = nn.CrossEntropyLoss(weight=class_weights)
 
     best_val_f1 = 0.0
 
