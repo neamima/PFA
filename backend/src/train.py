@@ -6,8 +6,8 @@ from sklearn.metrics import classification_report, f1_score
 import pandas as pd
 
 # Import de tes modules personnalisés
-from model import get_model
-from dataset import get_dataloaders
+from backend.src.model import get_model
+from backend.src.dataset import get_dataloaders
 
 # ==========================================================
 # CONFIGURATION & HYPERPARAMÈTRES
