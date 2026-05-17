@@ -2,6 +2,7 @@ import mysql.connector
 import bcrypt
 import streamlit as st
 from datetime import datetime
+import os
 
 
 # Paramètres de connexion MySQL
@@ -95,3 +96,52 @@ def get_user_diagnoses(user_id):
     diagnoses = cursor.fetchall()
     conn.close()
     return diagnoses
+
+def get_all_users():
+    """Récupère la liste de tous les utilisateurs inscrits."""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT id, username, role, created_at FROM users ORDER BY created_at DESC")
+    users = cursor.fetchall()
+    conn.close()
+    return users
+
+def delete_user(user_id):
+    """Supprime un utilisateur, ses données en base et ses images physiques."""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True) # On utilise le dictionnaire pour lire les colonnes par nom
+    
+    # 1. Récupérer les chemins des images AVANT la suppression en BDD
+    cursor.execute("SELECT image_path FROM diagnoses WHERE user_id = %s", (user_id,))
+    diagnoses = cursor.fetchall()
+    
+    # 2. Supprimer les fichiers physiques sur le disque dur
+    for diag in diagnoses:
+        file_path = diag['image_path']
+        if file_path and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                print(f"⚠️ Impossible de supprimer le fichier {file_path} : {e}")
+
+    # 3. Supprimer l'utilisateur en BDD (le ON DELETE CASCADE supprimera les lignes des diagnostics)
+    # On repasse sur un curseur classique pour l'exécution du DELETE
+    cursor = conn.cursor() 
+    cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+    conn.commit()
+    conn.close()
+
+def get_all_logs():
+    """Récupère l'historique système (connexions, déconnexions)."""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    query = """
+        SELECT h.id, h.timestamp, u.username, u.role, h.action 
+        FROM history h
+        JOIN users u ON h.user_id = u.id
+        ORDER BY h.timestamp DESC
+    """
+    cursor.execute(query)
+    logs = cursor.fetchall()
+    conn.close()
+    return logs
